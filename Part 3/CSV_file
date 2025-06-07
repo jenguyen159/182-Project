@@ -1,0 +1,39 @@
+import glob
+import os
+import re
+import csv
+
+
+def aggregate_edges(output_csv='edges_aggregated.csv'):
+   for filepath in glob.glob('*_edges.txt'):
+       sample = os.path.basename(filepath).replace('_edges.txt', '')
+       with open(filepath) as f:
+           for line in f:
+               line = line.strip()
+               if not line:
+                   continue
+               junction = line.split()[0]
+               if '-->' in junction:
+                   left, right = junction.split('-->')
+               elif '->' in junction:
+                   left, right = junction.split('->')
+               else:
+                   continue
+               # Strip strand symbols
+               left_coord = re.sub(r'[+-]$', '', left)
+               right_coord = re.sub(r'[+-]$', '', right)
+               key = (left_coord, right_coord)
+               edges_dict.setdefault(key, set()).add(sample)
+
+   with open(output_csv, 'w', newline='') as csvfile:
+       writer = csv.writer(csvfile)
+       writer.writerow(['EdgeID', 'Start', 'End', 'SampleCount'])
+       for idx, ((start, end), samples) in enumerate(edges_dict.items(), start=1):
+           writer.writerow([f'edge{idx}', start, end, len(samples)])
+
+
+   print(f"Wrote {output_csv}")
+
+
+if __name__ == '__main__':
+   aggregate_edges()
